@@ -58,8 +58,8 @@ class Client(object):
                     return obj
             return content
         else:
-            tmpl = "Unexpexted HTTP status. Expecting {0!r} but got {1!r}"
-            msg = tmpl.format(str(expected_status), status)
+            tmpl = "Unexpexted HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
+            msg = tmpl.format(str(expected_status), status, uri)
             raise SuperFastMatchError(msg)
         
 
@@ -81,6 +81,16 @@ class Client(object):
                              {})
 
 
+    def associations(self, doctype=None, page=None):
+        url = '/association/'
+        if doctype is not None:
+            url = '%s%s' % (url, doctype)
+        params = {}
+        if page is not None:
+            params['cursor'] = page
+        return self._apicall('GET', url, httplib.OK, params)
+
+
     def update_associations(self, doctype=None, doctype2=None):
         url = '/association/'
         if doctype:
@@ -95,18 +105,23 @@ class Client(object):
         return self._apicall('GET', url, [httplib.OK, httplib.NOT_MODIFIED, httplib.NOT_FOUND])
 
 
-    def documents(self, page=None):
+    def documents(self, doctype=None, page=None):
         url = '/document/'
+        if doctype is not None:
+            url = "%s%s" % (url, doctype)
         params = {}
         if page is not None:
             params['cursor'] = page
         return self._apicall('GET', url, httplib.OK, params)
 
 
-    def search(self, text, doctype=None):
+    def search(self, text, doctype=None, **kwargs):
         url = '/search/'
-        params = {'text': text}
+        params = kwargs
+        if text is not None:
+            params['text'] = text
         if doctype:
             url = '%s/%s/' % (url, doctype)
             params['doctype'] = str(doctype)
+
         return self._apicall('POST', url, httplib.OK, params)
