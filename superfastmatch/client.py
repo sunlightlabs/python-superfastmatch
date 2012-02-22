@@ -7,6 +7,7 @@ __copyright__ = "Copyright (c) 2011 Sunlight Labs"
 __license__ = "BSD"
 
 import urllib
+import urlparse
 import httplib
 import httplib2
 import json
@@ -45,7 +46,7 @@ class Client(object):
 
         if params:
             params = urllib.urlencode(params, doseq=True)
-        uri = '%s%s' % (self.url, path)
+        uri = urlparse.urljoin(self.url, path)
         # copied from Donovan's example, not clear why it is needed
         headers = {'Expect': ''}
 
@@ -58,15 +59,15 @@ class Client(object):
                     return obj
             return content
         else:
-            tmpl = "Unexpexted HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
+            tmpl = "Unexpected HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
             msg = tmpl.format(str(expected_status), status, uri)
             raise SuperFastMatchError(msg)
-        
+
 
     def add(self, doctype, docid, text, defer=False, **kwargs):
         method = 'POST' if defer else 'PUT'
         kwargs['text'] = text
-        return self._apicall(method, '/document/%s/%s/' % (doctype, docid), 
+        return self._apicall(method, '/document/%s/%s/' % (doctype, docid),
                              httplib.ACCEPTED, kwargs)
 
 
