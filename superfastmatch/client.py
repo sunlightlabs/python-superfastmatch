@@ -44,6 +44,9 @@ class Client(object):
         expected_status = ensure_sequence(expected_status)
 
         if params:
+            for (key, value) in params.iteritems():
+                if isinstance(value, unicode):
+                    params[key] = value.encode('utf-8')
             params = urllib.urlencode(params, doseq=True)
         uri = '%s%s' % (self.url, path)
         # copied from Donovan's example, not clear why it is needed
@@ -94,21 +97,21 @@ class Client(object):
     def update_associations(self, doctype=None, doctype2=None):
         url = '/association/'
         if doctype:
-            url = '%s/%s/' % (url, doctype)
+            url = '%s%s/' % (url, doctype)
         if doctype2:
-            url = '%s/%s/' % (url, doctype2)
+            url = '%s%s/' % (url, doctype2)
         return self._apicall('POST', url, httplib.ACCEPTED)
 
 
     def document(self, doctype, docid):
-        url = '/document/%s/%s' % (doctype, docid)
+        url = '/document/%s/%s/' % (doctype, docid)
         return self._apicall('GET', url, [httplib.OK, httplib.NOT_MODIFIED, httplib.NOT_FOUND])
 
 
     def documents(self, doctype=None, page=None):
         url = '/document/'
         if doctype is not None:
-            url = "%s%s" % (url, doctype)
+            url = "%s%s/" % (url, doctype)
         params = {}
         if page is not None:
             params['cursor'] = page
