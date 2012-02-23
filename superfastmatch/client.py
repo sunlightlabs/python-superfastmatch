@@ -49,7 +49,6 @@ class Client(object):
         uri = urlparse.urljoin(self.url, path)
         # copied from Donovan's example, not clear why it is needed
         headers = {'Expect': ''}
-
         resp, content = self._http.request(uri, method, params, headers)
         status = int(resp['status'])
         if status in expected_status:
@@ -67,23 +66,23 @@ class Client(object):
     def add(self, doctype, docid, text, defer=False, **kwargs):
         method = 'POST' if defer else 'PUT'
         kwargs['text'] = text
-        return self._apicall(method, '/document/%s/%s/' % (doctype, docid),
+        return self._apicall(method, 'document/%s/%s/' % (doctype, docid),
                              httplib.ACCEPTED, kwargs)
 
 
     def delete(self, doctype, docid):
-        return self._apicall('DELETE', '/document/%s/%s/' % (doctype, docid),
+        return self._apicall('DELETE', 'document/%s/%s/' % (doctype, docid),
                              [httplib.ACCEPTED, httplib.NOT_FOUND])
 
 
     def get(self, doctype, docid):
-        return self._apicall('GET', '/document/%s/%s/' % (doctype, docid),
+        return self._apicall('GET', 'document/%s/%s/' % (doctype, docid),
                              [httplib.OK, httplib.NOT_FOUND, httplib.NOT_MODIFIED],
                              {})
 
 
     def associations(self, doctype=None, page=None):
-        url = '/association/'
+        url = 'association/'
         if doctype is not None:
             url = '%s%s' % (url, doctype)
         params = {}
@@ -93,7 +92,7 @@ class Client(object):
 
 
     def update_associations(self, doctype=None, doctype2=None):
-        url = '/association/'
+        url = 'association/'
         if doctype:
             url = '%s/%s/' % (url, doctype)
         if doctype2:
@@ -102,12 +101,12 @@ class Client(object):
 
 
     def document(self, doctype, docid):
-        url = '/document/%s/%s' % (doctype, docid)
+        url = 'document/%s/%s' % (doctype, docid)
         return self._apicall('GET', url, [httplib.OK, httplib.NOT_MODIFIED, httplib.NOT_FOUND])
 
 
     def documents(self, doctype=None, page=None):
-        url = '/document/'
+        url = 'document/'
         if doctype is not None:
             url = "%s%s" % (url, doctype)
         params = {}
@@ -117,7 +116,7 @@ class Client(object):
 
 
     def search(self, text, doctype=None, **kwargs):
-        url = '/search/'
+        url = 'search/'
         params = kwargs
         if text is not None:
             params['text'] = text
