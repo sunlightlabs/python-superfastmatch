@@ -1,3 +1,6 @@
 from client import Client
-from djangoclient import Client as DjangoClient
-
+from client import SuperFastMatchError
+try:
+    from djangoclient import Client as DjangoClient
+except ImportError:
+    pass
