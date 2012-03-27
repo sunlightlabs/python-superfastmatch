@@ -31,9 +31,11 @@ def ensure_sequence(arg):
 class Client(object):
 
 
-    def __init__(self, url='http://127.0.0.1:8080', parse_response=True,
+    def __init__(self, url='http://127.0.0.1:8080/', parse_response=True,
                  username=None, password=None):
         self.url = url
+        if not self.url.endswith('/'):
+            self.url += '/'
         self._http = httplib2.Http()
         if username is not None and password is not None:
             self._http.add_credentials(username, password)
