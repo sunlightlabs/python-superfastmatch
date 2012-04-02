@@ -7,5 +7,6 @@ setup(name='python-superfastmatch',
       description='Python client API for Superfastmatch',
       author='Drew Vogel',
       author_email='dvogel@sunlightfoundation.com',
-      packages=['superfastmatch']
+      packages=['superfastmatch'],
+      requires=['stream>=0.8']
      )

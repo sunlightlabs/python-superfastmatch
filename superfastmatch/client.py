@@ -6,15 +6,57 @@ __version__ = "0.1.0-dev"
 __copyright__ = "Copyright (c) 2011 Sunlight Labs"
 __license__ = "BSD"
 
+import logging
 import urllib
 import urlparse
 import httplib
 import httplib2
 import json
+import stream
+
+
+log = logging.getLogger(__name__)
 
 
 class SuperFastMatchError(Exception):
     """ Exception for SFM API errors """
+    def __init__(self, msg, status, expected_status, *args, **kwargs):
+        super(SuperFastMatchError, self).__init__(msg, *args, **kwargs)
+        self.status = status
+        self.expected_status = expected_status
+
+
+def parse_doctype_range(rangestr):
+    """Return a list of the doctypes in the range specified expanded as a list 
+    of integers. This is used to validate arguments. The actual range strings
+    are passed onto the superfastmatch server.
+
+    >>> parse_doctype_range('1-2:5:7-9')
+    [1, 2, 5, 7, 8, 9]
+    >>> parse_doctype_range('')
+    >>> parse_doctype_range('1')
+    [1]
+    >>> parse_doctype_range('7-7')
+    [7]
+    """
+    if not rangestr:
+        raise Exception('Invalid doctype range ({0})'.format(rangestr))
+
+    split_on_hyphen = lambda s: s.split('-')
+
+    def expand(rng):
+        if len(rng) == 1:
+            return int(rng[0])
+        elif len(rng) == 2:
+            return range(int(rng[0]), int(rng[1]) + 1)
+        else:
+            raise Exception('Unrecognized range data type')
+
+    return (stream.Stream(rangestr.split(':'))
+            >> stream.map(split_on_hyphen)
+            >> stream.map(expand)
+            >> stream.flatten
+            >> list)
 
 
 def ensure_sequence(arg):
@@ -52,9 +94,12 @@ class Client(object):
                     params[key] = value.encode('utf-8')
             params = urllib.urlencode(params, doseq=True)
         uri = urlparse.urljoin(self.url, path)
-        # copied from Donovan's example, not clear why it is needed
-        headers = {'Expect': ''}
+        headers = {}
+        if method == 'GET':
+            uri = uri + '?' + params
+            params = None
         resp, content = self._http.request(uri, method, params, headers)
+        log.debug('httplib2.Http.request(uri={uri!r}, method={method!r}, params={params!r}, headers={headers!r})'.format(**locals()))
         status = int(resp['status'])
         if status in expected_status:
             if self.parse_response == True:
@@ -65,7 +110,7 @@ class Client(object):
         else:
             tmpl = "Unexpected HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
             msg = tmpl.format(str(expected_status), status, uri)
-            raise SuperFastMatchError(msg)
+            raise SuperFastMatchError(msg, status, expected_status)
 
 
     def add(self, doctype, docid, text, defer=False, **kwargs):
@@ -96,11 +141,15 @@ class Client(object):
         return self._apicall('GET', url, httplib.OK, params)
 
 
-    def update_associations(self, doctype=None, doctype2=None):
-        url = 'association/'
+    def update_associations(self, doctype=None, doctype2=None, skip_validation=False):
+        url = 'associations/'
         if doctype:
+            if not skip_validation:
+                parse_doctype_range(doctype)
             url = '%s%s/' % (url, doctype)
         if doctype2:
+            if not skip_validation:
+                parse_doctype_range(doctype2)
             url = '%s%s/' % (url, doctype2)
         return self._apicall('POST', url, httplib.ACCEPTED)
 
@@ -110,13 +159,17 @@ class Client(object):
         return self._apicall('GET', url, [httplib.OK, httplib.NOT_MODIFIED, httplib.NOT_FOUND])
 
 
-    def documents(self, doctype=None, page=None):
+    def documents(self, doctype=None, page=None, order_by=None, limit=None):
         url = 'document/'
         if doctype is not None:
             url = "%s%s/" % (url, doctype)
         params = {}
         if page is not None:
             params['cursor'] = page
+        if order_by is not None:
+            params['order_by'] = order_by
+        if limit is not None:
+            params['limit'] = limit
         return self._apicall('GET', url, httplib.OK, params)
 
 
@@ -130,3 +183,7 @@ class Client(object):
             params['doctype'] = str(doctype)
 
         return self._apicall('POST', url, httplib.OK, params)
+
+
+    def queue(self):
+        return self._apicall('GET', 'queue/', httplib.OK)
