@@ -93,9 +93,11 @@ class Client(object):
                 if isinstance(value, unicode):
                     params[key] = value.encode('utf-8')
             params = urllib.urlencode(params, doseq=True)
+        elif params == {}:
+            params = ''
         uri = urlparse.urljoin(self.url, path)
         headers = {}
-        if method == 'GET':
+        if method == 'GET' and params:
             uri = uri + '?' + params
             params = None
         resp, content = self._http.request(uri, method, params, headers)
