@@ -100,8 +100,8 @@ class Client(object):
         if method == 'GET' and params:
             uri = uri + '?' + params
             params = None
-        resp, content = self._http.request(uri, method, params, headers)
         log.debug('httplib2.Http.request(uri={uri!r}, method={method!r}, params={params!r}, headers={headers!r})'.format(**locals()))
+        resp, content = self._http.request(uri, method, params, headers)
         status = int(resp['status'])
         if status in expected_status:
             if self.parse_response == True:
