@@ -181,7 +181,7 @@ class Client(object):
         if text is not None:
             params['text'] = text
         if doctype:
-            url = '%s/%s/' % (url, doctype)
+            url = '%s%s/' % (url, doctype)
             params['doctype'] = str(doctype)
 
         return self._apicall('POST', url, httplib.OK, params)
@@ -189,3 +189,5 @@ class Client(object):
 
     def queue(self):
         return self._apicall('GET', 'queue/', httplib.OK)
+
+
