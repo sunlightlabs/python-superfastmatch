@@ -6,3 +6,4 @@ try:
 except ImportError:
     pass
 from .iterators import DocumentIterator
+from .util import parse_doctype_range
