@@ -1,4 +1,5 @@
 import stream
+from collections import defaultdict
 
 def parse_doctype_range(rangestr):
     """Return a list of the doctypes in the range specified expanded as a list 
@@ -33,4 +34,19 @@ def parse_doctype_range(rangestr):
             >> list)
 
 
+def merge_doctype_mappings(mapping):
+    """
+    >>> sorted(merge_doctype_mappings({1: 'a', 2: 'b', 3: 'a'}))
+    [('1:3', 'a'), ('2', 'b')]
+    >>> sorted(merge_doctype_mappings({10: 'z', 11: 'y'}))
+    [('10', 'z'), ('11', 'y')]
+    """
+    inverse_mapping = defaultdict(list)
+    for (doctype, client) in mapping.iteritems():
+        inverse_mapping[client].append(doctype)
+
+    merged_mapping = [(':'.join([str(d) for d in doctypes]), client)
+                      for (client, doctypes) in inverse_mapping.iteritems()]
+
+    return merged_mapping
 

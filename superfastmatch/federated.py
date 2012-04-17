@@ -1,25 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from collections import defaultdict
 import gevent
 import gevent.pool
-
-def merge_doctype_mappings(mapping):
-    """
-    >>> sorted(merge_doctype_mappings({1: 'a', 2: 'b', 3: 'a'}))
-    [('1:3', 'a'), ('2', 'b')]
-    >>> sorted(merge_doctype_mappings({10: 'z', 11: 'y'}))
-    [('10', 'z'), ('11', 'y')]
-    """
-    inverse_mapping = defaultdict(list)
-    for (doctype, client) in mapping.iteritems():
-        inverse_mapping[client].append(doctype)
-
-    merged_mapping = [(':'.join([str(d) for d in doctypes]), client)
-                      for (client, doctypes) in inverse_mapping.iteritems()]
-
-    return merged_mapping
+from .iterators import FederatedDocumentIterator
+from .util import merge_doctype_mappings
 
 class FederatedClient(object):
     """
@@ -28,32 +13,75 @@ class FederatedClient(object):
     same client.
 
     TODO:
-      - Implement a DocumentIterator over this client that maintains inter-server 
-        paging order.
-      - Implement add() and delete()
       - Determine whether update_associations() should expose errors when the
         caller tries to associate between servers.
     """
 
     def __init__(self, client_mapping):
         """
-        `client_mapping`: A dict mapping a doctype values to Client objects.
+        `client_mapping`: A dict mapping doctype values to Client objects.
         """
         self.client_mapping = client_mapping
         self.search_mapping = dict(merge_doctype_mappings(client_mapping))
         self.pool = gevent.pool.Pool(len(self.search_mapping))
 
     def client(self, doctype):
+        if doctype not in self.client_mapping:
+            raise Exception('No server mapped to doctype {doctype}'.format(doctype=doctype))
         return self.client_mapping[doctype]
 
+    def add(self, doctype, docid, text, defer=False, **kwargs):
+        return self.client(doctype).add(doctype, docid, text, **kwargs)
+
+    def delete(self, doctype, docid):
+        return self.client(doctype).delete(doctype, docid)
+
     def document(self, doctype, docid):
-        client = self.client_mapping[doctype]
-        return client.document(doctype, docid)
+        return self.client(doctype).document(doctype, docid)
+
+    def documents(self, doctype=None, page=None, order_by=None, limit=None):
+        """
+        Mimics the `GET /document/` document listing enough to implement enumeration. It does not
+        provide first, last, or previous cursors.
+        """
+
+        if doctype:
+            return self.client(doctype).documents(doctype, page, order_by, limit)
+        else:
+            dociter = FederatedDocumentIterator(
+                client_mapping=self.search_mapping,
+                doctype=doctype,
+                order_by=order_by,
+                start_at=page)
+            
+            results = {
+                'success': True,
+                'cursors': {
+                    'current': '',
+                    'first': '',
+                    'last': '',
+                    'previous': '',
+                    'next': ''
+                },
+                'rows': [
+                ]
+            }
+            for doc in dociter:
+                results['rows'].append(doc)
+                if len(results['rows']) >= (limit or 10):
+                    break
+
+            try:
+                nextdoc = dociter.next()
+                results['cursors']['next'] = ('{%s}:{doctype}:{docid}' % (order_by.lstrip('-') or 'doctype')).format(**nextdoc)
+            except StopIteration:
+                # Leave 'next' cursor as ''
+                pass
+            return results
 
     def search(self, text, doctype=None, **kwargs):
         if doctype:
-            client = self.client_mapping[doctype]
-            return client.search(text, doctype, **kwargs)
+            return self.client(doctype).search(text, doctype, **kwargs)
         else:
             empty_documents_map = {
                 'documents': {
