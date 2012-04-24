@@ -3,6 +3,7 @@
 import logging
 import gevent
 import gevent.pool
+from copy import deepcopy
 from .iterators import FederatedDocumentIterator
 from .util import merge_doctype_mappings
 
@@ -22,12 +23,18 @@ class FederatedClient(object):
         `client_mapping`: A dict mapping doctype values to Client objects.
         """
         self.client_mapping = client_mapping
+        """ `search_mapping`: maps doctype range strings (e.g. 1:2:7) to client objects."""
         self.search_mapping = dict(merge_doctype_mappings(client_mapping))
         self.pool = gevent.pool.Pool(len(self.search_mapping))
 
+    def clients(self):
+        return deepcopy(self.search_mapping)
+
     def client(self, doctype):
+        doctype = int(doctype)
         if doctype not in self.client_mapping:
-            raise Exception('No server mapped to doctype {doctype}'.format(doctype=doctype))
+            raise Exception('No server mapped to doctype {doctype!r}. Mapped doctypes: {doctypes!r}'.format(doctype=doctype,
+                                                                                                            doctypes=self.client_mapping.keys()))
         return self.client_mapping[doctype]
 
     def add(self, doctype, docid, text, defer=False, **kwargs):
@@ -56,15 +63,8 @@ class FederatedClient(object):
             
             results = {
                 'success': True,
-                'cursors': {
-                    'current': '',
-                    'first': '',
-                    'last': '',
-                    'previous': '',
-                    'next': ''
-                },
-                'rows': [
-                ]
+                'cursors': { 'current': '', 'first': '', 'last': '', 'previous': '', 'next': '' },
+                'rows': []
             }
             for doc in dociter:
                 results['rows'].append(doc)
