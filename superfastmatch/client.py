@@ -20,10 +20,11 @@ log = logging.getLogger(__name__)
 
 class SuperFastMatchError(Exception):
     """ Exception for SFM API errors """
-    def __init__(self, msg, status, expected_status, *args, **kwargs):
+    def __init__(self, msg, status, expected_status, response, *args, **kwargs):
         super(SuperFastMatchError, self).__init__(msg, *args, **kwargs)
         self.status = status
         self.expected_status = expected_status
+        self.response = response
 
 
 def ensure_sequence(arg):
@@ -79,7 +80,7 @@ class Client(object):
         else:
             tmpl = "Unexpected HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
             msg = tmpl.format(str(expected_status), status, uri)
-            raise SuperFastMatchError(msg, status, expected_status)
+            raise SuperFastMatchError(msg, status, expected_status, (status, content))
 
 
     def add(self, doctype, docid, text, defer=False, **kwargs):
