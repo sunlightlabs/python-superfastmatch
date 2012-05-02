@@ -1,3 +1,4 @@
+import itertools
 import stream
 from collections import defaultdict
 
@@ -50,3 +51,73 @@ def merge_doctype_mappings(mapping):
 
     return merged_mapping
 
+
+class PushBackIterator(object):
+    def __init__(self, subiter):
+        self.subiter = iter(subiter)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.subiter.next()
+
+    def pushback(self, obj):
+        self.subiter = itertools.chain([obj], self.subiter)
+
+
+class ChunkedIterator(object):
+    """
+    >>> it = ChunkedIterator(range(0, 6), chunksize=2, key=lambda obj: 1)
+    >>> [list(chunk) for chunk in it]
+    [[0, 1], [2, 3], [4, 5]]
+    >>> it = ChunkedIterator(range(0, 5), chunksize=3, key=lambda obj: 1)
+    >>> [list(chunk) for chunk in it]
+    [[0, 1, 2], [3, 4]]
+    >>> it = ChunkedIterator(range(0, 7), chunksize=3, key=lambda obj: obj)
+    >>> [list(chunk) for chunk in it]
+    [[0, 1, 2], [3], [4], [5], [6]]
+    >>> it = ChunkedIterator([], chunksize=2, key=lambda obj: 1)
+    >>> [list(chunk) for chunk in it]
+    []
+    """
+    def __init__(self, subiter, chunksize, key):
+        self.subiter = PushBackIterator(iter(subiter))
+        self.chunksize = chunksize
+        self.key = key
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        chunk = []
+        current_size = 0
+        try:
+            while current_size < self.chunksize:
+                obj = self.subiter.next()
+                obj_size = self.key(obj)
+                new_size = current_size + obj_size
+                if new_size > self.chunksize and len(chunk) > 0:
+                    self.subiter.pushback(obj)
+                    return chunk
+                chunk.append(obj)
+                current_size = new_size
+        except StopIteration:
+            if len(chunk) == 0:
+                raise
+
+        return chunk
+
+
+class UnpicklerIterator(object):
+    def __init__(self, unpickler):
+        self.unpickler = unpickler
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        try:
+            return self.unpickler.load()
+        except EOFError:
+            raise StopIteration

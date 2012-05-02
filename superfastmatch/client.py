@@ -51,7 +51,8 @@ class Client(object):
             self._http.add_credentials(username, password)
         self.parse_response = parse_response
 
-
+    def __repr__(self):
+        return u"<Client(url=%s)>" % (self.url, )
 
     def _apicall(self, method, path, expected_status, params=''):
         expected_status = ensure_sequence(expected_status)
