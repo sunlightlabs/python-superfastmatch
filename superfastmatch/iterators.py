@@ -1,5 +1,8 @@
 import logging
+from copy import deepcopy
 from .util import merge_doctype_mappings
+from .client import SuperFastMatchError
+
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +51,7 @@ class DocumentIterator(object):
     range of doctypes.
     """
 
-    def __init__(self, client, order_by, doctype=None, chunksize=100, start_at=None):
+    def __init__(self, client, order_by, doctype=None, chunksize=100, start_at=None, fetch_text=False):
         assert hasattr(client, 'documents'), 'The first argument to DocumentIterator() must implement the superfastmatch.client.Client methods.'
         self.client = client
         # response: the most recent response from the server
@@ -64,6 +67,7 @@ class DocumentIterator(object):
         self.chunksize = chunksize
         self.doctype = doctype
         self.order_by = order_by
+        self.fetch_text = fetch_text
 
     def __iter__(self):
         return self
@@ -78,7 +82,19 @@ class DocumentIterator(object):
     def current(self):
         if self.chunk is None or self.index is None:
             return None
-        return self.chunk[self.index]
+        docmeta = self.chunk[self.index]
+        if self.fetch_text == False:
+            return docmeta
+        
+        docresponse = self.client.document(docmeta['doctype'], docmeta['docid'])
+        if docresponse['success'] == False:
+            raise SuperFastMatchError('Unable to fetch document ({doctype}, {docid}).'.format(**doc))
+        
+        # This copies the docmeta dict and then inserts the fetched text to avoid 
+        # keeping a reference to the text in the chunk buffer.
+        newdoc = deepcopy(docmeta)
+        newdoc['text'] = docresponse['text']
+        return newdoc
 
     def fetch_chunk(self):
         if self.next_cursor is None:
