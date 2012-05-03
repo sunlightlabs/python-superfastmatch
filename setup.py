@@ -8,5 +8,5 @@ setup(name='python-superfastmatch',
       author='Drew Vogel',
       author_email='dvogel@sunlightfoundation.com',
       packages=['superfastmatch', 'superfastmatch.tools'],
-      requires=['stream (>=0.8)']
+      requires=['stream (>=0.8)', 'progressbar (>=2.3)', 'gevent (>=0.13.7)']
      )
