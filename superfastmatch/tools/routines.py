@@ -95,7 +95,7 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
     print "Done."
 
 
-def restore(sfm, url, inpath, doctype_mappingstr=None, dryrun=False):
+def restore(sfm, inpath, doctype_mappingstr=None, dryrun=False):
     doctype_mappings = {}
     if doctype_mappingstr is not None:
         for mapping in doctype_mappingstr.split(','):

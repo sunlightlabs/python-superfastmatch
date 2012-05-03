@@ -31,7 +31,7 @@ def main():
         sys.exit(1)
 
     sfm = Client(args.url, parse_response=True)
-    restore(sfm, args.url, args.inpath, doctype_mappingstr=args.doctypes, dryrun=args.dryrun)
+    restore(sfm, args.inpath, doctype_mappingstr=args.doctypes, dryrun=args.dryrun)
 
 
 if __name__ == "__main__":
