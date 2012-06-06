@@ -31,11 +31,17 @@ class FederatedClient(object):
         return deepcopy(self.search_mapping)
 
     def client(self, doctype):
-        doctype = int(doctype)
-        if doctype not in self.client_mapping:
-            raise Exception('No server mapped to doctype {doctype!r}. Mapped doctypes: {doctypes!r}'.format(doctype=doctype,
-                                                                                                            doctypes=self.client_mapping.keys()))
-        return self.client_mapping[doctype]
+        try:
+            doctype = int(doctype)
+            if doctype not in self.client_mapping:
+                raise Exception('No server mapped to doctype {doctype!r}. Mapped doctypes: {doctypes!r}'.format(doctype=doctype,
+                                                                                                                doctypes=self.client_mapping.keys()))
+            return self.client_mapping[doctype]
+        except ValueError:
+            if doctype not in self.search_mapping:
+                raise Exception('No server mapped to doctype range {range!r}. Mapped ranged: {ranges!r}'.format(range=doctype,
+                                                                                                                ranges=self.search_mapping.keys()))
+            return self.search_mapping[doctype]
 
     def add(self, doctype, docid, text, defer=False, **kwargs):
         return self.client(doctype).add(doctype, docid, text, **kwargs)
@@ -109,6 +115,11 @@ class FederatedClient(object):
                 if response['success'] == True:
                     if not combined_response:
                         combined_response.update(empty_documents_map)
+
+                    if 'uuid' in response and 'uuid' not in combined_response:
+                        combined_response['uuid'] = response['uuid']
+                    if 'text' in response and 'text' not in combined_response:
+                        combined_response['text'] = response['text']
 
                     combined_documents = combined_response['documents']
                     
