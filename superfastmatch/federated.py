@@ -120,6 +120,8 @@ class FederatedClient(object):
                         combined_response['uuid'] = response['uuid']
                     if 'text' in response and 'text' not in combined_response:
                         combined_response['text'] = response['text']
+                    if 'url' in response and 'url' not in combined_response:
+                        combined_response['url'] = response['url']
 
                     combined_documents = combined_response['documents']
                     
