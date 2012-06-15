@@ -7,6 +7,7 @@ __copyright__ = "Copyright (c) 2011 Sunlight Labs"
 __license__ = "BSD"
 
 import logging
+import socket
 import urllib
 import urlparse
 import httplib
@@ -74,6 +75,9 @@ class Client(object):
         status = int(resp['status'])
         if status in expected_status:
             if self.parse_response == True:
+                if 'content-type' not in resp:
+                    import ipdb; ipdb.set_trace()
+
                 if resp['content-type'] in 'application/json':
                     obj = json.loads(content)
                     return obj

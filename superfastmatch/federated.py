@@ -4,6 +4,7 @@ import logging
 import gevent
 import gevent.pool
 from copy import deepcopy
+from .client import SuperFastMatchError
 from .iterators import FederatedDocumentIterator
 from .util import merge_doctype_mappings
 
@@ -138,8 +139,8 @@ class FederatedClient(object):
             if any(successes):
                 combined_response['success'] = True
             else:
-                combined_response['success'] = False
-                combined_response['error'] = "All dispatched search calls failed."
+                raise SuperFastMatchError("All dispatched search requests failed.",
+                                          None, None, None)
 
             return combined_response
 

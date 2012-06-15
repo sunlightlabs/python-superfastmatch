@@ -1,5 +1,7 @@
+import socket
 import logging
 import superfastmatch.client
+from django.http import HttpResponse
 from django.conf import settings
 
 class Client(superfastmatch.client.Client):
