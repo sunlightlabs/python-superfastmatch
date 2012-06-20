@@ -43,11 +43,14 @@ class Client(object):
 
 
     def __init__(self, url='http://127.0.0.1:8080/', parse_response=True,
-                 username=None, password=None):
+                 username=None, password=None, cache=None, timeout=None, proxy_info=None):
+        """
+        cache, timeout, proxy_info are simply passed through to httplib2
+        """
         self.url = url
         if not self.url.endswith('/'):
             self.url += '/'
-        self._http = httplib2.Http()
+        self._http = httplib2.Http(cache=cache, timeout=timeout, proxy_info=proxy_info)
         if username is not None and password is not None:
             self._http.add_credentials(username, password)
         self.parse_response = parse_response
