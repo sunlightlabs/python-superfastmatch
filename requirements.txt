@@ -1,4 +1,6 @@
 stream>=0.8
 progressbar>=2.3
 gevent>=0.13.7
+httplib2
+progressbar
 
