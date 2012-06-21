@@ -3,7 +3,7 @@ import sys
 import time
 import datetime
 import random
-from multiprocessing import Process, Event, Value, Array
+from multiprocessing import Process, Event, Value
 
 import superfastmatch
 import argparse
@@ -50,8 +50,10 @@ def run_random_search(workernum, sfm, corpus, textrange):
     random_key_offset = random.randint(0, len(corpus_keys) - 1)
     filename = corpus_keys[random_key_offset]
     searchtext = corpus[filename]
-    if len(searchtext) > maxlen:
-        searchtext = searchtext[:maxlen]
+    length = random.randint(args.mintextlen, args.maxtextlen)
+    if length < len(searchtext):
+        offset = random.randint(0, len(searchtext) - length - 1)
+        searchtext = searchtext[offset:length]
 
     try:
         sfm.search(text=searchtext, url=filename)
