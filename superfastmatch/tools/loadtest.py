@@ -53,7 +53,7 @@ def run_random_search(workernum, sfm, corpus, textrange):
     length = random.randint(args.mintextlen, args.maxtextlen)
     if length < len(searchtext):
         offset = random.randint(0, len(searchtext) - length - 1)
-        searchtext = searchtext[offset:length]
+        searchtext = searchtext[offset:offset+length]
 
     try:
         sfm.search(text=searchtext, url=filename)
