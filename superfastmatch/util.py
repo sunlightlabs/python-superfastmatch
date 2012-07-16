@@ -1,6 +1,106 @@
 import itertools
 import stream
+from copy import deepcopy
 from collections import defaultdict
+
+def eliminate_overlap(ranges):
+    def merged(a, b):
+        (t, u) = a
+        (v, w) = b
+        return (min(t, v), max(u, w))
+
+    def compare_bounds(a, b):
+        (t, u) = a
+        (v, w) = b
+        if t == v:
+            return w - u
+        else:
+            return t - v
+    
+    def subsumes(a, b):
+        (t, u) = a
+        (v, w) = b
+        return t <= v and w <= u
+
+    def overlaps(a, b):
+        (t, u) = a
+        (v, w) = b
+        return t <= v < u
+    
+    old_ranges = deepcopy(ranges)
+    old_ranges.sort(cmp=compare_bounds)
+    new_ranges = []
+
+    while len(old_ranges) > 0:
+        a = old_ranges.pop(0)
+        if len(old_ranges) == 0:
+            new_ranges.append(a)
+        else:
+            while len(old_ranges) > 0:
+                b = old_ranges.pop(0)
+                
+                if subsumes(a, b):
+                    pass # ignore b
+                elif subsumes(b, a):
+                    a = deepcopy(b)
+                elif overlaps(a, b):
+                    a = merged(a, b)
+                else:
+                    old_ranges = [b] + old_ranges
+                    break
+            new_ranges.append(a)
+    return new_ranges
+
+class SparseRange(object):
+    def __init__(self, ranges):
+        self.ranges = eliminate_overlap(ranges)
+        self.len = sum([b - a + 1 for (a, b) in self.ranges])
+        self.min = min((a for (a, b) in self.ranges))
+        self.max = max((b for (a, b) in self.ranges))
+
+    def __len__(self):
+        return self.len
+
+    def __contains__(self, x):
+        for (a, b) in self.ranges:
+            if a <= x <= b:
+                return True
+        return False
+
+    def __iter__(self):
+        return ((x for (a, b) in self.ranges for x in xrange(a, b + 1)))
+
+    def __unicode__(self):
+        return "SparseRange({0.min}.../...{0.max})".format(self)
+
+def parse_docid_range(rangestr):
+    """
+    Converts a string of the form n-m,i,j,x-y to a function that determines
+    whether it's argument is in the range described.
+
+    The approach and implementation differ from parse_doctype_range due to
+    the difference in size of the described ranges. Returning a list of all
+    values described for docids would be wasteful of memory.
+
+    Returns a function of type str -> bool
+    """
+
+    range_strings = rangestr.split(',')
+    if len(range_strings) == 0:
+        raise Exception('Empty docid range: {0}'.format(rangestr))
+
+    ranges = []
+    for rng_str in range_strings:
+        if rng_str.isdigit():
+            ranges.append((int(rng_str), int(rng_str)))
+        elif '-' in rng_str:
+            (a, b) = rng_str.split('-')
+            ranges.append((int(a), int(b)))
+        else:
+            raise Exception('Unrecognized docid range data type: {0}'.format(rng_str))
+
+    return SparseRange(ranges)
+    
 
 def parse_doctype_range(rangestr):
     """Return a list of the doctypes in the range specified expanded as a list 

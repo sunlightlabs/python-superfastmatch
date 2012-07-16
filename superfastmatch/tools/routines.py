@@ -17,7 +17,7 @@ from ..zipfile27 import ZipFile, ZIP_DEFLATED
 from contextlib import closing
 from copy import deepcopy
 import progressbar
-from ..util import ChunkedIterator, UnpicklerIterator, parse_doctype_range
+from ..util import ChunkedIterator, UnpicklerIterator, parse_doctype_range, parse_docid_range, SparseRange
 from ..iterators import DocumentIterator
 
 
@@ -95,7 +95,21 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
     print "Done."
 
 
-def restore(sfm, inpath, doctype_mappingstr=None, dryrun=False):
+def restore(sfm, inpath, docid_rangestr=None, doctype_mappingstr=None, dryrun=False):
+    """
+    Reads documents from a backup archive and posts them to a superfastmatch server.
+
+    docid_rangestr is of the format 1-10,20,21 to import documents 1 through 10 and 20 and 21.
+
+    doctype_mappingstr isof the format 10:11,11:10 to swap doctypes 10 and 11.
+
+    TODO: The current implementation reads the entire archive regardless of the docid
+    range specified. This could be sped up dramatically by taking that information into
+    account but to do it right the archive format would need to be changed to include
+    the doctype range of each docs## file. Low priority since this should be a rare
+    task.
+    """
+
     doctype_mappings = {}
     if doctype_mappingstr is not None:
         for mapping in doctype_mappingstr.split(','):
@@ -114,6 +128,12 @@ def restore(sfm, inpath, doctype_mappingstr=None, dryrun=False):
     with closing(ZipFile(inpath, 'r')) as infile:
         with closing(infile.open('meta', 'r')) as metafile:
             metadata = pickle.load(metafile)
+
+            docid_range = SparseRange([(1, metadata['doc_count'])])
+            if docid_rangestr is not None:
+                docid_range = parse_docid_range(docid_rangestr)
+                print >>sys.stderr, "Limiting import to {0}".format(docid_rangestr)
+
             progress = progressbar.ProgressBar(maxval=metadata['doc_count'],
                                                widgets=[
                                                    progressbar.widgets.AnimatedMarker(),
@@ -123,7 +143,6 @@ def restore(sfm, inpath, doctype_mappingstr=None, dryrun=False):
                                                    progressbar.widgets.Percentage(),
                                                    '  ',
                                                    progressbar.widgets.ETA(),
-
                                                ])
             progress.start()
             doccounter = 0
@@ -131,20 +150,23 @@ def restore(sfm, inpath, doctype_mappingstr=None, dryrun=False):
             for file_number in range(0, metadata['file_count']):
                 docsfile_name = 'docs{num}'.format(num=file_number)
                 with closing(infile.open(docsfile_name, 'r')) as docsfile:
-
                     docloader = pickle.Unpickler(docsfile)
                     for doc in UnpicklerIterator(docloader):
                         if 'text' in doc and 'doctype' in doc and 'docid' in doc:
-                            for attr in ignored_attributes:
-                                if doc.has_key(attr):
-                                    del doc[attr]
-                            new_doctype = doctype_mappings.get(doc['doctype'])
-                            if new_doctype:
-                                doc['doctype'] = new_doctype
-                            if dryrun == False:
-                                add_result = sfm.add(defer=True, **doc)
-                                if add_result['success'] == False:
-                                    print >>sys.stderr, "Failed to restore document ({doctype}, {docid})".format(**doc)
+                            if doc['docid'] not in docid_range:
+                                if doc['docid'] > docid_range.max:
+                                    pass
+                            else:
+                                for attr in ignored_attributes:
+                                    if doc.has_key(attr):
+                                        del doc[attr]
+                                new_doctype = doctype_mappings.get(doc['doctype'])
+                                if new_doctype:
+                                    doc['doctype'] = new_doctype
+                                if dryrun == False:
+                                    add_result = sfm.add(defer=True, **doc)
+                                    if add_result['success'] == False:
+                                        print >>sys.stderr, "Failed to restore document ({doctype}, {docid})".format(**doc)
                         elif 'doctype' in doc and 'docid' in doc:
                             print >>sys.stderr, "Document ({doctype}, {docid}) cannot be restored because it is missing a text attribute.".format(**doc)
 

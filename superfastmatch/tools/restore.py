@@ -19,6 +19,8 @@ def main():
                         help='Don\'t actually restore the documents. Just run through the backup file.')
     parser.add_argument('--doctypes', metavar='MAPPING', action='store',
                         help='A string describing how to translate doctypes during the restore process.')
+    parser.add_argument('--docids', metavar='DOCID_RANGE', action='store',
+                        help='A string describing which docids to restore. E.g. 1-10,20,30-31 would restore 13 documents.')
     parser.add_argument('--url', metavar='URL', type=str,
                         default='http://127.0.0.1:8080', action='store',
                         help='URL of the Superfastmatch server.')
@@ -31,7 +33,7 @@ def main():
         sys.exit(1)
 
     sfm = Client(args.url, parse_response=True)
-    restore(sfm, args.inpath, doctype_mappingstr=args.doctypes, dryrun=args.dryrun)
+    restore(sfm, args.inpath, docid_rangestr=args.docids, doctype_mappingstr=args.doctypes, dryrun=args.dryrun)
 
 
 if __name__ == "__main__":
