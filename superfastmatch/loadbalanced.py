@@ -50,6 +50,17 @@ class LoadBalancedClient(object):
         client_index = self.clients.index(client)
         self.search_times[client_index] = dur.total_seconds()
         return response
+
+    def queue(self):
+        """
+        Calls the queue method of the last client. The last client is used as
+        the bellweather since it is the last server to receive each command.
+        If the other servers were under higher load then they may take longer
+        to complete. Obviously, the results of this method are only
+        heuristicly descriptive of the load-balanced servers. For a holistic
+        approach you need to query each individual server.
+        """
+        return self.clients[-1].queue()
     
     def _choose_client(self):
         lowest = min(self.search_times)
