@@ -1,6 +1,8 @@
 import socket
 import logging
 import superfastmatch.client
+import superfastmatch.federated
+import superfastmatch.loadbalanced
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -22,10 +24,22 @@ class Client(superfastmatch.client.Client):
 
 
 def from_django_conf(confkey='default'):
+    """
+    Instantiates a superfastmatch client object based on the structure of the configuration specified.
+    
+    from_django_conf('default') uses the value of django.conf.settings.SUPERFASTMATCH['default']
+
+    If the value is a dict, a basic client is returned. A list of dicts
+    returns a federated client. In this case each dict is expected to
+    have a key 'doctypes' that maps to a list of doctypes on that server.
+    Finally, a tuple of dicts will yield a load balanced client. In 
+    this case the servers are expected to contain exactly the same content.
+    """
+
     conf = settings.SUPERFASTMATCH[confkey]
     if isinstance(conf, dict):
         return Client(confkey)
-    elif isinstance(conf, (list, tuple)):
+    elif isinstance(conf, list):
         clients_by_url = dict()
         clients = dict()
         for subconf in conf:
@@ -40,6 +54,9 @@ def from_django_conf(confkey='default'):
         if not clients:
             raise Exception('Django config for federated client {confkey} contained no valid configurations.'.format(confkey=confkey))
         return superfastmatch.federated.FederatedClient(clients)
+    elif isinstance(conf, tuple):
+        clients = [superfastmatch.Client(url=params.get('url'), parse_response=params.get('parse_response')) for params in conf]
+        return superfastmatch.loadbalanced.LoadBalancedClient(clients)
 
 if __name__ == "__main__":
     client = Client()

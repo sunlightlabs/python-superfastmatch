@@ -79,7 +79,8 @@ class Client(object):
         if status in expected_status:
             if self.parse_response == True:
                 if 'content-type' not in resp:
-                    import ipdb; ipdb.set_trace()
+                    raise SuperFastMatchError("No Content-Type header in response",
+                                              status, 200, (status, content))
 
                 if resp['content-type'] in 'application/json':
                     obj = json.loads(content)
