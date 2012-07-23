@@ -19,6 +19,7 @@ class Client(superfastmatch.client.Client):
         copy_setting('username')
         copy_setting('password')
         copy_setting('parse_response')
+        copy_setting('timeout')
 
         super(Client, self).__init__(*args, **kwargs)
 
