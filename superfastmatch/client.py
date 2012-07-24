@@ -153,15 +153,20 @@ class Client(object):
 
 
     def search(self, text, doctype=None, **kwargs):
-        url = 'search/'
-        params = kwargs
-        if text is not None:
-            params['text'] = text
-        if doctype:
-            url = '%s%s/' % (url, doctype)
-            params['doctype'] = str(doctype)
+        uuid = kwargs.get('uuid')
+        if uuid:
+            url = 'search/{uuid}/'.format(uuid=uuid)
+            return self._apicall('GET', url, httplib.OK, {})
+        else:
+            url = 'search/'
+            params = kwargs
+            if text is not None:
+                params['text'] = text
+            if doctype:
+                url = '%s%s/' % (url, doctype)
+                params['doctype'] = str(doctype)
 
-        return self._apicall('POST', url, httplib.OK, params)
+            return self._apicall('POST', url, httplib.OK, params)
 
 
     def queue(self):
