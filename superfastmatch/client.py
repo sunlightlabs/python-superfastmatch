@@ -7,11 +7,9 @@ __copyright__ = "Copyright (c) 2011 Sunlight Labs"
 __license__ = "BSD"
 
 import logging
-import socket
-import urllib
 import urlparse
 import httplib
-import httplib2
+import requests
 import json
 from .util import parse_doctype_range
 
@@ -43,14 +41,11 @@ class Client(object):
 
 
     def __init__(self, url='http://127.0.0.1:8080/', parse_response=True,
-                 username=None, password=None, cache=None, timeout=None, proxy_info=None):
-        """
-        cache, timeout, proxy_info are simply passed through to httplib2
-        """
+                 username=None, password=None, timeout=None):
         self.url = url
         if not self.url.endswith('/'):
             self.url += '/'
-        self._http = httplib2.Http(cache=cache, timeout=timeout, proxy_info=proxy_info)
+        self.timeout = timeout
         if username is not None and password is not None:
             self._http.add_credentials(username, password)
         self.parse_response = parse_response
@@ -58,37 +53,38 @@ class Client(object):
     def __repr__(self):
         return u"<Client(url=%s)>" % (self.url, )
 
-    def _apicall(self, method, path, expected_status, params=''):
+    def _apicall(self, method, path, expected_status, params=None):
+        log.debug('_apicall({0}, {1}, ...'.format(method, path))
+        params = params or {}
         expected_status = ensure_sequence(expected_status)
 
         if params:
             for (key, value) in params.iteritems():
                 if isinstance(value, unicode):
                     params[key] = value.encode('utf-8')
-            params = urllib.urlencode(params, doseq=True)
-        elif params == {}:
-            params = ''
-        uri = urlparse.urljoin(self.url, path)
-        headers = {}
-        if method == 'GET' and params:
-            uri = uri + '?' + params
-            params = None
-        log.debug('httplib2.Http.request(uri={uri!r}, method={method!r}, params={params!r}, headers={headers!r})'.format(**locals()))
-        resp, content = self._http.request(uri, method, params, headers)
-        status = int(resp['status'])
+        url = urlparse.urljoin(self.url, path)
+        headers = {
+            'Expect': None
+        }
+        response = requests.request(method, url,
+                                    params=params if method == 'GET' else None,
+                                    data=params if method in ('PUT', 'POST') else None,
+                                    timeout=self.timeout,
+                                    headers=headers)
+        status = response.status_code
+        content = response.text
         if status in expected_status:
             if self.parse_response == True:
-                if 'content-type' not in resp:
-                    raise SuperFastMatchError("No Content-Type header in response",
-                                              status, 200, (status, content))
-
-                if 'application/json' in  resp['content-type']: 
+                if response.headers.get('content-type', 'text/plain').startswith('application/json'):
                     obj = json.loads(content)
                     return obj
+                else:
+                    raise SuperFastMatchError("No Content-Type header in response",
+                                              status, 200, (status, content))
             return content
         else:
             tmpl = "Unexpected HTTP status. Expecting {0!r} but got {1!r} on {2!r}"
-            msg = tmpl.format(str(expected_status), status, uri)
+            msg = tmpl.format(str(expected_status), status, url)
             raise SuperFastMatchError(msg, status, expected_status, (status, content))
 
 
@@ -134,7 +130,7 @@ class Client(object):
 
 
     def document(self, doctype, docid):
-        url = 'document/%s/%s' % (doctype, docid)
+        url = 'document/%s/%s/' % (doctype, docid)
         return self._apicall('GET', url, [httplib.OK, httplib.NOT_MODIFIED, httplib.NOT_FOUND])
 
 
