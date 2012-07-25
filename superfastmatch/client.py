@@ -46,9 +46,12 @@ class Client(object):
         if not self.url.endswith('/'):
             self.url += '/'
         self.timeout = timeout
-        if username is not None and password is not None:
-            self._http.add_credentials(username, password)
         self.parse_response = parse_response
+
+        auth = (username, password) if (username is not None and password is not None) else None
+        self.requests = requests.session(auth=auth)
+        self.requests.config['prefetch'] = True
+        self.requests.config['keep-alive'] = True
 
     def __repr__(self):
         return u"<Client(url=%s)>" % (self.url, )
@@ -66,11 +69,11 @@ class Client(object):
         headers = {
             'Expect': None
         }
-        response = requests.request(method, url,
-                                    params=params if method == 'GET' else None,
-                                    data=params if method in ('PUT', 'POST') else None,
-                                    timeout=self.timeout,
-                                    headers=headers)
+        response = self.requests.request(method, url,
+                                         params=params if method == 'GET' else None,
+                                         data=params if method in ('PUT', 'POST') else None,
+                                         timeout=self.timeout,
+                                         headers=headers)
         status = response.status_code
         content = response.content
         if status in expected_status:
