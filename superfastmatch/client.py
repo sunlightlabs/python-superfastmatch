@@ -72,7 +72,7 @@ class Client(object):
                                     timeout=self.timeout,
                                     headers=headers)
         status = response.status_code
-        content = response.text
+        content = response.content
         if status in expected_status:
             if self.parse_response == True:
                 if response.headers.get('content-type', 'text/plain').startswith('application/json'):
