@@ -130,6 +130,50 @@ class DocumentIterator(object):
         self.index = 0
 
 
+class FaultTolerantDocumentIterator(DocumentIterator):
+    """
+    Occasionally a DocumentIterator will fail because superfastmatch returns invalid JSON.
+    This class will, if the order_by field is numeric, attempt to continue past the document
+    yielding invalid JSON by incrementing the cursor value and retrying the fetch operation.
+    This is intended for testing and debugging purposes, to be used with order_by=docid.
+    """
+    def __init__(self, client, order_by, doctype=None, chunksize=100, start_at=None, fetch_text=False):
+        super(FaultTolerantDocumentIterator, self).__init__(client, order_by, doctype=doctype, chunksize=chunksize, start_at=start_at, fetch_text=fetch_text)
+        self.in_fault = False
+        self.original_chunksize = chunksize
+        self.inaccessible_documents = []
+
+    def fetch_chunk(self):
+        while self.next_cursor != u'':
+            try:
+                super(FaultTolerantDocumentIterator, self).fetch_chunk()
+                self.in_fault = False
+                self.chunksize = self.original_chunksize
+                return
+            except Exception as e:
+                parts = self.next_cursor.split(':')
+                if len(parts) != 3:
+                    raise Exception("Cannot tolerate {0} fault because the next cursor ({1!r}) is not recognized.".format(type(e), self.next_cursor))
+                if not parts[2].isdigit():
+                    raise Exception("Cannot tolerate {0} fault because the order_by field ({1}) is not numeric.".format(type(e), self.order_by))
+
+                if self.in_fault:
+                    # Since self.in_fault is True only after we set
+                    # self.chunksize to 1, we can be sure the document
+                    # requested is causing the JSON parsing error.
+                    logging.debug("Inaccessible document found ({0}, {1}).".format(int(parts[1]), int(parts[2])))
+                    self.inaccessible_documents.append((parts[1], parts[2]))
+                    parts[2] = str(int(parts[2]) + 1)
+                    self.next_cursor = ':'.join(parts)
+                else:
+                    # We don't know which of the documents requested caused
+                    # the JSON parsing error so we first set the chunksize
+                    # to 1 and try again.
+                    logging.debug("Document iteration fault when requesting {0} documents beginning at cursor {1}".format(self.chunksize, self.next_cursor))
+                    self.chunksize = 1
+                    self.in_fault = True
+
+
 class FederatedDocumentIterator(object):
     def __init__(self, client_mapping, order_by, doctype=None, chunksize=100, start_at=None):
         self.reverse_order = order_by.startswith('-')
