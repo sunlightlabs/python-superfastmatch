@@ -137,8 +137,11 @@ class FaultTolerantDocumentIterator(DocumentIterator):
     yielding invalid JSON by incrementing the cursor value and retrying the fetch operation.
     This is intended for testing and debugging purposes, to be used with order_by=docid.
     """
-    def __init__(self, client, order_by, doctype=None, chunksize=100, start_at=None, fetch_text=False):
-        super(FaultTolerantDocumentIterator, self).__init__(client, order_by, doctype=doctype, chunksize=chunksize, start_at=start_at, fetch_text=fetch_text)
+    def __init__(self, client, order_by='docid', doctype=None, chunksize=100, start_at=None, fetch_text=False):
+        """
+        The order_by id is only accepted for API compatibility with DocumentIterator.
+        """
+        super(FaultTolerantDocumentIterator, self).__init__(client, order_by='docid', doctype=doctype, chunksize=chunksize, start_at=start_at, fetch_text=fetch_text)
         self.in_fault = False
         self.original_chunksize = chunksize
         self.inaccessible_documents = []
@@ -164,6 +167,7 @@ class FaultTolerantDocumentIterator(DocumentIterator):
                     logging.debug("Inaccessible document found ({0}, {1}).".format(int(parts[1]), int(parts[2])))
                     self.inaccessible_documents.append((parts[1], parts[2]))
                     parts[2] = str(int(parts[2]) + 1)
+                    parts[0] = parts[2]
                     self.next_cursor = ':'.join(parts)
                 else:
                     # We don't know which of the documents requested caused
