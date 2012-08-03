@@ -88,7 +88,7 @@ class DocumentIterator(object):
         
         docresponse = self.client.document(docmeta['doctype'], docmeta['docid'])
         if docresponse['success'] == False:
-            raise SuperFastMatchError('Unable to fetch document ({doctype}, {docid}).'.format(**doc))
+            raise SuperFastMatchError('Unable to fetch document ({doctype}, {docid}).'.format(**docmeta))
         
         # This copies the docmeta dict and then inserts the fetched text to avoid 
         # keeping a reference to the text in the chunk buffer.
