@@ -7,7 +7,8 @@ import logging
 import dateutil.tz
 import dateutil.parser
 from argparse import ArgumentParser
-from ..logparser import (LogIterator, GETRecord, POSTRecord,
+from ..logparser import (LogIterator,
+                         HTTPRecord, GETRecord, POSTRecord,
                          ConnectRecord, DisconnectRecord,
                          ServerStartRecord, ServerFinishRecord,
                          StatusRecord)
@@ -21,6 +22,8 @@ parser.add_argument('--end', metavar='DATETIME', type=dateutil.parser.parse,
 parser.add_argument('--loglevel', metavar='LEVEL', default='WARN',
                     choices=('DEBUG', 'INFO', 'WARN', 'ERROR', 'CRTITICAL'), action='store',
                     help='Level of logging.')
+parser.add_argument('--ignore-address', metavar='LEVEL', default=None,
+                    help='Address to ignore requests from, usually 127.0.0.1')
 parser.add_argument('logfile', metavar='LOGFILE', action='store',
                     help='Log file to analyze.')
 
@@ -57,6 +60,9 @@ def main():
                     continue
             elif record.timestamp > end:
                 end = record.timestamp
+
+            if args.ignore_address and isinstance(record.event, HTTPRecord) and record.event.host == args.ignore_address:
+                continue
 
             if isinstance(record.event, GETRecord):
                 get_requests += 1
