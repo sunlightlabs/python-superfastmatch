@@ -70,8 +70,18 @@ _ConnectEvent = Literal("connected: expr=") + RemoteHost
 ConnectEvent = Translate(_ConnectEvent, ConnectRecord.create)
 _DisconnectEvent = Literal("disconnecting: expr=") + RemoteHost
 DisconnectEvent = Translate(_DisconnectEvent, DisconnectRecord.create)
-_ServerStatus = SignificantLiteral("Finished processing command queue") | Regex("Finished processing \d+ items in command queue")
+_ServerStatus = (SignificantLiteral("Finished processing command queue")
+                 | Regex("Finished processing \d+ items in command queue"))
 ServerStatus = Translate(_ServerStatus, StatusRecord.create)
+_DebugStatus = (SignificantLiteral("server stopped")
+                | SignificantLiteral("closing the server socket")
+                | SignificantLiteral("finishing the server")
+                | Regex("listening server socket started: fd=\d+")
+                | Regex("Posting initialisation finished in: \d+\.\d+ secs")
+                | Regex("(Adding|Deleting) Document\(\d+,\d+\) Slots: (\d+:\d+ )+ Total: \d+")
+                | Regex("starting the server: expr=((\d{1,}\.){3}\d{1,3})?:\d+")
+                | Regex("server socket opened: expr=((\d{1,}\.){3}\d{1,3})?:\d+ timeout=\d+\.\d+"))
+DebugStatus = Translate(_DebugStatus, StatusRecord.create)
 URI = Regex("(/[-_a-zA-Z0-9?&%=:\.]*)+")
 HTTPStatus = Regex("-?\d{3}")
 HTTPVersion = Literal("HTTP/") + Regex("\d+\.\d+")
@@ -81,7 +91,7 @@ _ServerStart = Literal("================ [START]: pid=") + Regex("\d+")
 ServerStart = Translate(_ServerStart, ServerStartRecord.create)
 _ServerFinish = Literal("================ [FINISH]: pid=") + Regex("\d+")
 ServerFinish = Translate(_ServerFinish, ServerFinishRecord.create)
-Event = ConnectEvent | DisconnectEvent | HTTPRequest | ServerStart | ServerFinish | ServerStatus
+Event = ConnectEvent | DisconnectEvent | HTTPRequest | ServerStart | ServerFinish | ServerStatus | DebugStatus
 _Line = Timestamp + Literal(': [') + LogLevel + Literal(']: ') + Event
 Line = Translate(_Line, LineRecord.create)
 
