@@ -92,11 +92,11 @@ class Client(object):
             raise SuperFastMatchError(msg, status, expected_status, (status, content))
 
 
-    def add(self, doctype, docid, text, defer=False, **kwargs):
+    def add(self, doctype, docid, text, defer=False, **kwargs, accepted_codes=httplib.ACCEPTED):
         method = 'POST' if defer else 'PUT'
         kwargs['text'] = text
         return self._apicall(method, 'document/%s/%s/' % (doctype, docid),
-                             httplib.ACCEPTED, kwargs)
+                             accepted_codes, kwargs)
 
 
     def delete(self, doctype, docid):
