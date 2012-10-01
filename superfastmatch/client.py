@@ -82,7 +82,7 @@ class Client(object):
                     raise SuperFastMatchError("No Content-Type header in response",
                                               status, 200, (status, content))
 
-                if resp['content-type'] in 'application/json':
+                if 'application/json' in  resp['content-type']: 
                     obj = json.loads(content)
                     return obj
             return content
