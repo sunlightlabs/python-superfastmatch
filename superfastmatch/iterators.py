@@ -122,8 +122,8 @@ class DocumentIterator(object):
             if response['success'] == False or len(response['rows']) == 0:
                 raise StopIteration()
         except KeyError:
-            log.error('Response from server is missing "success" and/or "rows" keys.: {r}'.format(r=unicode(response)))
-            raise SuperFastMatchError('Response from server is missing "success" and/or "rows" keys.'.format(r=unicode(response)))
+            log.error('Response from server is missing "success" and/or "rows" keys: {r}'.format(r=unicode(response)))
+            raise SuperFastMatchError('Response from server is missing "success" and/or "rows" keys.', 200, 200, response)
 
         self.response = response
         self.chunk = response['rows']
