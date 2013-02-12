@@ -122,7 +122,8 @@ class DocumentIterator(object):
             if response['success'] == False or len(response['rows']) == 0:
                 raise StopIteration()
         except KeyError:
-            import ipdb; ipdb.set_trace()
+            log.error('Response from server is missing "success" and/or "rows" keys.: {r}'.format(r=unicode(response)))
+            raise SuperFastMatchError('Response from server is missing "success" and/or "rows" keys.'.format(r=unicode(response)))
 
         self.response = response
         self.chunk = response['rows']
