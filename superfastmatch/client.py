@@ -82,7 +82,7 @@ class Client(object):
                     raise SuperFastMatchError("No Content-Type header in response",
                                               status, 200, (status, content))
 
-                if resp['content-type'] in 'application/json':
+                if 'application/json' in  resp['content-type']: 
                     obj = json.loads(content)
                     return obj
             return content
@@ -92,11 +92,11 @@ class Client(object):
             raise SuperFastMatchError(msg, status, expected_status, (status, content))
 
 
-    def add(self, doctype, docid, text, defer=False, **kwargs):
+    def add(self, doctype, docid, text, defer=False, accepted_codes=httplib.ACCEPTED, **kwargs):
         method = 'POST' if defer else 'PUT'
         kwargs['text'] = text
         return self._apicall(method, 'document/%s/%s/' % (doctype, docid),
-                             httplib.ACCEPTED, kwargs)
+                             accepted_codes, kwargs)
 
 
     def delete(self, doctype, docid):
