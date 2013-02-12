@@ -48,10 +48,9 @@ class Client(object):
         self.timeout = timeout
         self.parse_response = parse_response
 
-        auth = (username, password) if (username is not None and password is not None) else None
-        self.requests = requests.session(auth=auth)
-        self.requests.config['prefetch'] = True
-        self.requests.config['keep_alive'] = True
+        self.requests = requests.Session()
+        if username is not None and password is not None:
+            self.requests.auth = (username, password)
 
     def __repr__(self):
         return u"<Client(url=%s)>" % (self.url, )
