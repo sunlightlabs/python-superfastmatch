@@ -129,7 +129,7 @@ def restore(sfm, inpath, docid_rangestr=None, doctype_mappingstr=None, dryrun=Fa
         with closing(infile.open('meta', 'r')) as metafile:
             metadata = pickle.load(metafile)
 
-            docid_range = SparseRange([(1, metadata['doc_count'])])
+            docid_range = None
             if docid_rangestr is not None:
                 docid_range = parse_docid_range(docid_rangestr)
                 print >>sys.stderr, "Limiting import to {0}".format(docid_rangestr)
@@ -153,7 +153,7 @@ def restore(sfm, inpath, docid_rangestr=None, doctype_mappingstr=None, dryrun=Fa
                     docloader = pickle.Unpickler(docsfile)
                     for doc in UnpicklerIterator(docloader):
                         if 'text' in doc and 'doctype' in doc and 'docid' in doc:
-                            if doc['docid'] not in docid_range:
+                            if docid_range is not None and doc['docid'] not in docid_range:
                                 if doc['docid'] > docid_range.max:
                                     pass
                             else:
