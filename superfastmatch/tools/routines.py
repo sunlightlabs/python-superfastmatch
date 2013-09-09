@@ -46,8 +46,8 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
         # Just ensure that it's valid.
         parse_doctype_range(doctype_rangestr)
 
-    docs = DocumentIterator(sfm, 
-                            order_by='docid', 
+    docs = DocumentIterator(sfm,
+                            order_by='docid',
                             doctype=doctype_rangestr,
                             chunksize=1000,
                             fetch_text=True)
@@ -61,7 +61,7 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
         'doc_count': 0,
         'file_count': 0
     }
-   
+
     with closing(ZipFile(outpath, 'w', compression=ZIP_DEFLATED, allowZip64=True)) as outfile:
         with NamedTemporaryFile(mode='wb') as metafile:
             for (file_number, docs_chunk) in enumerate(chunked_docs):
