@@ -44,8 +44,11 @@ class FederatedClient(object):
                                                                                                                 ranges=self.search_mapping.keys()))
             return self.search_mapping[doctype]
 
+    def new(self, doctype, text, defer=False, **kwargs):
+        return self.client(doctype).new(doctype, text, defer, **kwargs)
+
     def add(self, doctype, docid, text, defer=False, **kwargs):
-        return self.client(doctype).add(doctype, docid, text, **kwargs)
+        return self.client(doctype).add(doctype, docid, text, defer, **kwargs)
 
     def delete(self, doctype, docid):
         return self.client(doctype).delete(doctype, docid)

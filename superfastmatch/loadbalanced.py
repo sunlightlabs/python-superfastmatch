@@ -13,9 +13,15 @@ class LoadBalancedClient(object):
         self.clients = clients
         self.first_request = True
         self.search_times = [0] * len(self.clients)
-   
+        self.last_client = None
+
     def __repr__(self):
         return u"<LoadBalancedClient(numclients={0})>".format(len(self.clients))
+
+    def new(self, doctype, text, defer=False, *args, **kwargs):
+        def _new(client):
+            return client.new(doctype, text, defer, *args, **kwargs)
+        return self._balanced(_new)
 
     def add(self, doctype, docid, text, defer=False, *args, **kwargs):
         results = [client.add(doctype, docid, text, defer, *args, **kwargs)
@@ -72,6 +78,7 @@ class LoadBalancedClient(object):
         client = self.clients[client_index]
         t1 = datetime.datetime.now()
         result = f(client)
+        self.last_client = client
         t2 = datetime.datetime.now()
         dur = t2 - t1
         self.search_times[client_index] = dur.total_seconds()
