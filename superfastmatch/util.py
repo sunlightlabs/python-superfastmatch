@@ -16,7 +16,7 @@ def eliminate_overlap(ranges):
             return w - u
         else:
             return t - v
-    
+
     def subsumes(a, b):
         (t, u) = a
         (v, w) = b
@@ -26,7 +26,7 @@ def eliminate_overlap(ranges):
         (t, u) = a
         (v, w) = b
         return t <= v < u
-    
+
     old_ranges = deepcopy(ranges)
     old_ranges.sort(cmp=compare_bounds)
     new_ranges = []
@@ -38,7 +38,7 @@ def eliminate_overlap(ranges):
         else:
             while len(old_ranges) > 0:
                 b = old_ranges.pop(0)
-                
+
                 if subsumes(a, b):
                     pass # ignore b
                 elif subsumes(b, a):
@@ -100,7 +100,7 @@ def parse_docid_range(rangestr):
             raise Exception('Unrecognized docid range data type: {0}'.format(rng_str))
 
     return SparseRange(ranges)
-    
+
 
 def parse_doctype_range(rangestr):
     """Return a list of the doctypes in the range specified expanded as a list 

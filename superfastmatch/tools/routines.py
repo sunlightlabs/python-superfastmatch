@@ -46,8 +46,8 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
         # Just ensure that it's valid.
         parse_doctype_range(doctype_rangestr)
 
-    docs = DocumentIterator(sfm, 
-                            order_by='docid', 
+    docs = DocumentIterator(sfm,
+                            order_by='docid',
                             doctype=doctype_rangestr,
                             chunksize=1000,
                             fetch_text=True)
@@ -61,7 +61,7 @@ def backup(sfm, outpath, doctype_rangestr=None, chunksize=10000000):
         'doc_count': 0,
         'file_count': 0
     }
-   
+
     with closing(ZipFile(outpath, 'w', compression=ZIP_DEFLATED, allowZip64=True)) as outfile:
         with NamedTemporaryFile(mode='wb') as metafile:
             for (file_number, docs_chunk) in enumerate(chunked_docs):
@@ -129,7 +129,7 @@ def restore(sfm, inpath, docid_rangestr=None, doctype_mappingstr=None, dryrun=Fa
         with closing(infile.open('meta', 'r')) as metafile:
             metadata = pickle.load(metafile)
 
-            docid_range = SparseRange([(1, metadata['doc_count'])])
+            docid_range = None
             if docid_rangestr is not None:
                 docid_range = parse_docid_range(docid_rangestr)
                 print >>sys.stderr, "Limiting import to {0}".format(docid_rangestr)
@@ -153,7 +153,7 @@ def restore(sfm, inpath, docid_rangestr=None, doctype_mappingstr=None, dryrun=Fa
                     docloader = pickle.Unpickler(docsfile)
                     for doc in UnpicklerIterator(docloader):
                         if 'text' in doc and 'doctype' in doc and 'docid' in doc:
-                            if doc['docid'] not in docid_range:
+                            if docid_range is not None and doc['docid'] not in docid_range:
                                 if doc['docid'] > docid_range.max:
                                     pass
                             else:
