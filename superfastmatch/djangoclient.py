@@ -1,10 +1,9 @@
-import socket
-import logging
 import superfastmatch.client
 import superfastmatch.federated
 import superfastmatch.loadbalanced
-from django.http import HttpResponse
 from django.conf import settings
+
+__all__ = ['Client', 'from_django_conf']
 
 class Client(superfastmatch.client.Client):
     def __init__(self, confkey='default', *args, **kwargs):

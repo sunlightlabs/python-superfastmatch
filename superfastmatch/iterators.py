@@ -3,6 +3,7 @@ from copy import deepcopy
 from .util import merge_doctype_mappings
 from .client import SuperFastMatchError
 
+__all__ = ['DocumentIterator', 'FederatedDocumentIterator', 'FaultTolerantDocumentIterator']
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class DocumentIterator(object):
     by a hyphen (-) to indicate a reversal of the natural order. The `chunksize` option is
     available for optimization. It determines how many documents are retrieved from the server
     per request. The `doctype` argument can be used to limit the iteration to the a specific
-    range of doctypes.
+    range of doctypes. The returned document is represented as a dict.
     """
 
     def __init__(self, client, order_by, doctype=None, chunksize=100, start_at=None, fetch_text=False):

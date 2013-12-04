@@ -14,6 +14,8 @@ import json
 from .util import parse_doctype_range
 
 
+__all__ = ['SuperFastMatchError', 'Client']
+
 log = logging.getLogger(__name__)
 
 
@@ -78,8 +80,11 @@ class Client(object):
         if status in expected_status:
             if self.parse_response == True:
                 if response.headers.get('content-type', 'text/plain').startswith('application/json'):
-                    obj = json.loads(content)
-                    return obj
+                    try:
+                        obj = json.loads(content)
+                        return obj
+                    except ValueError as e:
+                        raise ValueError(u"Failed to parse JSON for request to {u} with parameters {p}: {e}".format(u=response.request.url, p=response.request.body, e=unicode(e)))
                 else:
                     raise SuperFastMatchError("No Content-Type header in response",
                                               status, 200, (status, content))
